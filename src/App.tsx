@@ -1,126 +1,186 @@
-import "./styles.css";
-
-const project = {
-  "sourceNo": 6,
-  "id": "hxyfront-62004",
-  "port": 62004,
-  "title": "滑雪板调校维护",
-  "domain": "滑雪装备调校",
-  "prompt": "我想做一个面向滑雪板调校店的装备维护前端系统，技师可以记录雪板品牌、长度、板型、刃角、打蜡类型、底板损伤、修补位置和客户偏好。页面需要有维护工单列表、刃角参数表、底板损伤标记区、完工状态筛选和客户历史维护记录。",
-  "palette": [
-    "#0369a1",
-    "#14b8a6",
-    "#f97316"
-  ],
-  "metrics": [
-    "待维护",
-    "完工工单",
-    "平均刃角",
-    "底板修补"
-  ],
-  "filters": [
-    "全地域",
-    "公园板",
-    "竞速板",
-    "粉雪板"
-  ],
-  "fields": [
-    "雪板品牌",
-    "长度",
-    "板型",
-    "刃角",
-    "打蜡类型",
-    "底板损伤"
-  ],
-  "records": [
-    [
-      "ORD-106",
-      "Burton 156",
-      "侧刃88°，底刃1°",
-      "已打低温蜡"
-    ],
-    [
-      "ORD-112",
-      "竞速板165",
-      "底板划痕12cm",
-      "待补P-Tex"
-    ],
-    [
-      "ORD-118",
-      "粉雪板158",
-      "客户偏好弱咬雪",
-      "待交付"
-    ]
-  ]
-};
+import { useScheduleBoard } from "./lib/useScheduleBoard";
+import { fmtTime } from "./lib/seed";
+import { GanttChart } from "./components/GanttChart";
+import { QueuePanel } from "./components/QueuePanel";
+import { NewOrderForm } from "./components/NewOrderForm";
+import { ParamsTable } from "./components/ParamsTable";
+import { HistoryPanel } from "./components/HistoryPanel";
 
 function App() {
+  const api = useScheduleBoard();
+  const {
+    confirmed,
+    draft,
+    schedule,
+    dirty,
+    writePending,
+    notice,
+    pending,
+    selectIds,
+  } = api;
+
+  const activeCount = draft.queue.length;
+  const doneToday = draft.orders.filter(
+    (o) =>
+      schedule.ops.some((op) => op.orderId === o.id) &&
+      (schedule.finish[o.id] ?? Infinity) <= draft.now
+  ).length;
+  const rushCount = draft.queue.filter(
+    (id) => draft.orders.find((o) => o.id === id)?.rush
+  ).length;
+  const baseBusy = draft.now < 9 * 60 + 30; // ORD-112 修补占用到 09:30
+
   return (
     <main className="app">
       <section className="hero">
-        <p>{project.id} · 源提示词{project.sourceNo} · Port {project.port}</p>
-        <h1>{project.title}</h1>
-        <span>{project.prompt}</span>
+        <p>hxyfront-62004 · 滑雪板调校维护工作台</p>
+        <h1>维护工单 · 底板修补 · 完工排程</h1>
+        <span>
+          一份可重排队列：打蜡 / 修边双工位并行，底板修补仅 1 个专用工位；加急插入后重算后续完工，
+          已开始 / 已承诺工单保留原时段；确认后写入，失败可从断点继续，撤销恢复上次确认状态。
+        </span>
       </section>
 
       <section className="metrics">
-        {project.metrics.map((metric: string, index: number) => (
-          <article key={metric}>
-            <small>{metric}</small>
-            <strong>{[86, 14, 7, 32][index] ?? 12}</strong>
-          </article>
-        ))}
+        <article>
+          <small>当前时间</small>
+          <strong>{fmtTime(draft.now)}</strong>
+        </article>
+        <article>
+          <small>可重排队列</small>
+          <strong>{activeCount}</strong>
+        </article>
+        <article>
+          <small>已完工（今日）</small>
+          <strong>{doneToday}</strong>
+        </article>
+        <article>
+          <small>加急 / 底板工位</small>
+          <strong>
+            {rushCount} / {baseBusy ? "占用中" : "空闲"}
+          </strong>
+        </article>
+      </section>
+
+      <section className="panel toolbar">
+        <div className="toolbar-group">
+          <span className="toolbar-label">工作台时钟</span>
+          {[15, 30, 60, 120].map((d) => (
+            <button key={d} onClick={() => api.advance(d)} disabled={writePending}>
+              推进 {d} 分钟
+            </button>
+          ))}
+        </div>
+        <div className="toolbar-group">
+          <span className="toolbar-label">排程</span>
+          <button
+            className="primary"
+            onClick={api.commitSelected}
+            disabled={writePending || selectIds.length === 0}
+            title="把勾选工单的当前排程作为承诺锁定"
+          >
+            确认排程（{selectIds.length}）
+          </button>
+          <button onClick={api.undo} disabled={!dirty && !writePending}>
+            撤销到上次确认 v{confirmed.version}
+          </button>
+        </div>
+        <div className="toolbar-group fault">
+          <span className="toolbar-label">故障演练</span>
+          {[1, 2, 0].map((n) => (
+            <button
+              key={n}
+              className={n > 0 && api.failuresLeft === n ? "chip-on" : ""}
+              onClick={() => api.armFailures(n)}
+            >
+              {n === 0 ? "清除注入" : `注入${n}次失败`}
+            </button>
+          ))}
+          <button onClick={api.resetDemo}>重置演示</button>
+        </div>
+      </section>
+
+      {notice && <div className={`notice notice-${notice.kind}`}>{notice.text}</div>}
+      {pending && (
+        <div className="notice notice-error pending-bar">
+          <span>
+            上次确认（v{pending.version} · {pending.label}）写入失败：第{" "}
+            {pending.failedChunk}/{pending.total} 块，{pending.error}
+          </span>
+          <button className="primary" onClick={api.retryFlush}>
+            从第 {pending.failedChunk} 块继续重试
+          </button>
+        </div>
+      )}
+
+      <section className="panel">
+        <div className="heading">
+          <div>
+            <p>工位占用</p>
+            <h2>完工排程 · 工位甘特图</h2>
+          </div>
+          <span className="version-tag">
+            {dirty ? "草稿（未确认）" : `已确认 v${schedule.version}`}
+          </span>
+        </div>
+        <GanttChart schedule={schedule} state={draft} />
       </section>
 
       <section className="workspace">
-        <aside className="panel">
-          <h2>{project.domain}筛选</h2>
-          <div className="chips">
-            {project.filters.map((item: string) => (
-              <button key={item}>{item}</button>
-            ))}
+        <section className="panel">
+          <div className="heading">
+            <div>
+              <p>可重排队列</p>
+              <h2>维护工单</h2>
+            </div>
+            <div className="mini-actions">
+              <button onClick={() => api.selectAll(true)}>全选</button>
+              <button onClick={() => api.selectAll(false)}>清空</button>
+            </div>
           </div>
-        </aside>
+          <QueuePanel
+            state={draft}
+            schedule={schedule}
+            selectIds={selectIds}
+            onToggleSelect={api.toggleSelect}
+            onToggleRush={api.setRush}
+          />
+        </section>
 
         <section className="panel form-panel">
           <div className="heading">
             <div>
-              <p>专业字段</p>
-              <h2>新增记录</h2>
+              <p>新工单</p>
+              <h2>登记维护需求</h2>
             </div>
-            <button className="primary">保存草稿</button>
           </div>
-          <div className="field-grid">
-            {project.fields.map((field: string) => (
-              <label key={field}>
-                <span>{field}</span>
-                <input placeholder={"填写" + field} />
-              </label>
-            ))}
-          </div>
+          <NewOrderForm onCreate={api.addNew} />
         </section>
       </section>
 
       <section className="panel">
         <div className="heading">
           <div>
-            <p>历史记录</p>
-            <h2>近期工作台</h2>
+            <p>刃角参数表</p>
+            <h2>工单参数与状态筛选</h2>
           </div>
-          <button>导出摘要</button>
         </div>
-        <div className="records">
-          {project.records.map((record: string[], index: number) => (
-            <article key={record.join("-")}>
-              <b>{String(index + 1).padStart(2, "0")}</b>
-              <div>
-                <h3>{record[0]}</h3>
-                <p>{record.slice(1).join(" · ")}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+        <ParamsTable state={draft} schedule={schedule} />
       </section>
+
+      <section className="panel">
+        <div className="heading">
+          <div>
+            <p>完工联动</p>
+            <h2>客户历史维护记录</h2>
+          </div>
+        </div>
+        <HistoryPanel state={draft} schedule={schedule} />
+      </section>
+
+      <footer className="foot">
+        底板修补工位容量 1 · 修边 / 打蜡工位容量 2 · 默认工序时长 修补 90′ / 修边 40′ / 打蜡 30′
+      </footer>
     </main>
   );
 }
