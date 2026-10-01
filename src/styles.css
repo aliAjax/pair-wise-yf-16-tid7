@@ -220,3 +220,481 @@ input {
     padding: 24px;
   }
 }
+
+/* ===== 写入状态条 ===== */
+.write-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 0;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--secondary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.05);
+}
+.write-bar.write-error {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+.write-bar.write-writing {
+  border-left-color: var(--primary);
+}
+.write-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #334155;
+  font-size: 14px;
+}
+.write-actions {
+  display: flex;
+  gap: 8px;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex: none;
+}
+.dot-ok { background: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18); }
+.dot-dirty { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18); }
+.dot-busy { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18); }
+.dot-error { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18); }
+.dot-writing { background: var(--primary); animation: pulse 1s infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ===== 工具栏 ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.toolbar .chips button.chip-active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.late-hint {
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ===== 工位容量面板 ===== */
+.station-panel h2 { margin-bottom: 12px; }
+.station-panel h3 { margin: 18px 0 10px; font-size: 15px; }
+.station-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.station-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+.station-list small {
+  margin-left: auto;
+  color: #64748b;
+  font-weight: 400;
+}
+.base-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.base-queue li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fbfdff;
+  font-size: 14px;
+}
+.base-queue li.is-rush {
+  border-color: var(--accent);
+  background: #fff7ed;
+}
+.base-queue li small {
+  margin-left: auto;
+  color: #64748b;
+}
+.station-note {
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+/* ===== 甘特图 ===== */
+.schedule-panel { min-width: 0; }
+.gantt {
+  display: grid;
+  gap: 10px;
+}
+.gantt-axis {
+  position: relative;
+  height: 18px;
+  margin-left: 120px;
+  border-bottom: 1px dashed var(--border);
+}
+.gantt-axis span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: #94a3b8;
+}
+.gantt-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+.gantt-row-label {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  font-size: 13px;
+}
+.gantt-row-label small {
+  color: #94a3b8;
+  font-size: 11px;
+}
+.gantt-track {
+  position: relative;
+  height: 34px;
+  background: repeating-linear-gradient(
+    90deg,
+    #f8fafc 0 60px,
+    #ffffff 60px 120px
+  );
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.gantt-bar {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 5px;
+  border: 1.5px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+.gantt-bar.status-pending {
+  border-style: dashed;
+  background: #ffffff !important;
+}
+.gantt-bar.is-rush {
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+.gantt-bar-flag {
+  font-style: normal;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-size: 10px;
+}
+.gantt-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  margin-left: 120px;
+  font-size: 12px;
+  color: #64748b;
+}
+.gantt-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.swatch.solid { background: var(--primary); }
+.swatch.dashed { background: #fff; border: 1.5px dashed var(--primary); }
+.swatch.rush { background: var(--accent); }
+.gantt-completion { margin-left: auto; font-weight: 700; color: #334155; }
+
+/* ===== 工单队列 ===== */
+.queue {
+  display: grid;
+  gap: 12px;
+}
+.queue-card {
+  display: grid;
+  grid-template-columns: 1fr 230px;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--secondary);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+.queue-card.is-rush {
+  border-left-color: var(--accent);
+  background: #fff7ed;
+}
+.queue-card.is-late {
+  border-left-color: #ef4444;
+}
+.queue-card-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.queue-card-id strong { font-size: 15px; }
+.queue-card h3 { margin: 0 0 8px; font-size: 17px; }
+.queue-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  color: #526071;
+  font-size: 13px;
+}
+.queue-card-damage { color: #b45309; }
+.queue-card-tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+.task-tag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.task-wax { background: #e0f2fe; color: #0369a1; }
+.task-edge { background: #ccfbf1; color: #0f766e; }
+.task-base { background: #ffedd5; color: #c2410c; }
+.queue-card-time {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+.time-block {
+  display: grid;
+  justify-items: end;
+}
+.time-block small { color: #94a3b8; font-size: 11px; }
+.time-block strong { font-size: 18px; }
+.text-late { color: #ef4444; }
+.queue-card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.queue-card-actions .danger { color: #ef4444; }
+
+/* ===== 徽章 ===== */
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+}
+.badge.status-pending { background: #f1f5f9; color: #64748b; }
+.badge.status-promised { background: #dbeafe; color: #1d4ed8; }
+.badge.status-working { background: #dcfce7; color: #15803d; }
+.badge.status-done { background: #ccfbf1; color: #0f766e; }
+.badge.rush { background: var(--accent); color: #fff; }
+.badge.late { background: #ef4444; color: #fff; }
+.chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 12%, #ffffff);
+  color: var(--primary);
+}
+.empty-queue {
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* ===== 底部两栏 ===== */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+/* ===== 参数表 ===== */
+.param-table-wrap { overflow-x: auto; }
+.param-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.param-table th,
+.param-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.param-table th {
+  color: #64748b;
+  font-weight: 700;
+  font-size: 12px;
+  background: #f8fafc;
+}
+.param-table tbody tr:hover { background: #f8fafc; }
+.table-empty {
+  color: #94a3b8;
+  text-align: center;
+  padding: 22px 0;
+}
+
+/* ===== 历史记录 ===== */
+.history {
+  display: grid;
+  gap: 12px;
+}
+.history article {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+.history b {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+.history h3 { margin: 0 0 6px; font-size: 15px; }
+.history p { margin: 0; }
+.history-time {
+  margin-top: 6px !important;
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+/* ===== 弹窗表单 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+.modal {
+  width: min(640px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+}
+.modal .heading { margin-bottom: 16px; }
+.modal .field-grid label.full { grid-column: 1 / -1; }
+.modal select {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  padding: 0 12px;
+  background: #fff;
+  font: inherit;
+}
+.checkbox-label { align-content: start; }
+.task-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.check-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.check-pill input { width: auto; min-height: auto; }
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.rush-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #b45309;
+  font-weight: 600;
+}
+.rush-check input { width: auto; min-height: auto; }
+
+@media (max-width: 860px) {
+  .bottom-grid { grid-template-columns: 1fr; }
+  .queue-card { grid-template-columns: 1fr; }
+  .queue-card-time { justify-items: start; }
+  .time-block { justify-items: start; }
+  .gantt-axis, .gantt-legend { margin-left: 0; }
+  .gantt-row { grid-template-columns: 80px 1fr; }
+  .write-bar { flex-direction: column; align-items: stretch; }
+}
